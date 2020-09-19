@@ -1,0 +1,8 @@
+
+.metadata/*.*
+RemoteSystemsTempFiles/*.*
+/.metadata/
+Koders/.classpath
+Koders/.project
+*.prefs
+Koders/bin/

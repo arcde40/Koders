@@ -1,0 +1,243 @@
+/**
+ * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
+ */options
+{
+  static = false;
+  debug_parser = true;
+  unicode_input = true;
+  jdk_version="1.8";
+}
+
+PARSER_BEGIN(ParserJJ)
+package ko.fjey.parser;
+
+public class ParserJJ
+{
+  public static void main(String args []) throws ParseException
+  {
+
+  }
+}
+PARSER_END(ParserJJ)
+SKIP :{  " "| "\r"| "\t"| "\n"}TOKEN : /* OPERATORS */{
+  < CHAR	: "문자" >
+| < DOUBLE	: "실수 " >
+| < INT		: "정수" >
+| < VAR 	: "변수" >
+| < WHILE	: "반복" >
+| < CONTINUE: "건너뜀" | "넘어감" | "건너 뜀" | "넘어 감" >
+| < BREAK	: "나감" | "반복문 나감" >
+| < PLUS	: "+" | "더하기" >
+| < MINUS	: "-" | "빼기" >
+| < MULTIPLY: "*" | "곱하기" >
+| < DIVIDE	: "/" | "나누기" >
+| < MODULAR	: "%" | "나머지" >}
+
+TOKEN:
+{  < SUBJECTIVE_JOSA : "이" | "가">
+| < SUBJECTIVE_BOJOSA: "은" | "는" >
+| < OBJECTIVE_JOSA	: "을" | "를" >
+| < TERMINAL_EXPR	:
+   "는" ("다")?
+   | "어" ("줘" | "주어 ")? ("버려" | "버리어")?
+   | "다" >
+| < ADJECTIVE_JOSA : "에" | "에게" | "께" | "한테" >
+}
+TOKEN:
+{
+	< IDENTIFIER: ["a"-"z","A"-"Z", "_"] (["a"-"z","A"-"Z", "_", "0"-"9"])* >
+}
+TOKEN :{
+  < INTEGER: ["1"-"9"] (["0"-"9"])* ("U")? ("L")? // DEC
+  			| "0" ["x", "X"] (["0"-"9","a"-"f","A"-"F"])+ ("U")? ("L")? // HEX
+  			| "0" (["0"-"7"])* ("U")? ("L")? >  // OCT| < CONSTANT : (< DIGIT >)+ >
+| < DOUBLE_LITERAL : (< DIGIT >)+ "." (< DIGIT >)+>| < #DIGIT : [ "0"-"9" ] >}
+
+// Block Comment Scanning
+MORE:
+{
+	< "/*" > : IN_BLOCK_COMMENT
+}
+
+< IN_BLOCK_COMMENT >
+MORE: { 
+	< ~[] >
+}
+
+< IN_BLOCK_COMMENT >
+SKIP: { 
+	< "*/" > : DEFAULT
+}
+
+// String Literal Scanning
+MORE:
+{
+	< "\"" > : IN_STRING
+}
+< IN_STRING >
+MORE: {
+  < (~["\"", "\\", "\n", "\r"])+ >
+| < "\\" (["0"-"7"]){3} >
+| < "\\" ~[] >
+}
+
+< IN_STRING >
+TOKEN: {
+	< STRING: "\"" > : DEFAULT
+}
+
+// Character Literal Scanning
+MORE:
+{
+	< "'" > : IN_CHARACTER 
+}
+
+< IN_CHARACTER >
+MORE:
+{
+	< ~["'", "\\", "\n", "\r"] > : CHARACTER_END
+| 	< "\\" (["0"-"7"]){3} > : CHARACTER_END
+| 	< "\\" ~[] > : CHARACTER_END
+}
+
+< CHARACTER_END >
+TOKEN:
+{
+	< CHARACTER: "'" > : DEFAULT
+}
+
+SPECIAL_TOKEN:
+{	< SPACES:	([" ", "\t", "\n", "\r", "\f"])+ >
+| 	< LINE_COMMENT:	"//" (~["\n","\r"])* ("\n" | "\r\n" | "\r")? >
+}
+
+void compilation_unit():
+{
+}
+{
+  import_stmts() top_defs() < EOF >
+}
+
+void import_stmts():
+{
+}
+{
+  (import_stmt())* "."
+}
+
+void import_stmt():
+{
+}
+{  name() ("." name())* [< OBJECTIVE_JOSA >] ("넣" <TERMINAL_EXPR > | "포함" < TERMINAL_EXPR >)
+}
+
+name():
+{
+}
+{	< IDENTIFIER >
+}
+
+top_defs():
+{
+}
+{  ( LOOKAHEAD(storage() typedef() < IDENTIFIER > "(")
+  defun()
+| LOOKAHEAD(3)
+  defvars()
+| defconst()
+| defstruct()
+| defunion()
+| typedef()
+  )*
+}
+
+defvars():
+{
+}
+{  storage() type() name() ["=" expr()] (("," | "와" | "과" | "랑") name() [ "=" expr()])* "."
+}
+
+defun():
+{
+
+}
+{
+  storage() typeref() name() "(" params() ")" block()
+}
+
+block():
+{
+}
+{
+  "{" defvar_list() stmts() "}" 
+}
+
+defstruct():
+{
+
+}
+{
+  < STRUCT > name() member_list() "."
+}
+
+defunion():
+{
+
+}
+{
+  < UNION > name() member_list() "."
+}
+
+params():
+{
+
+}
+{
+  LOOKAHEAD(< VOID > ")") < VOID > // (void)
+| fixedparams() ["," "..."] // (int a, int ...)
+}
+
+fixedparams():
+{
+
+}
+{
+  param() (LOOKAHEAD(2) "," param())* // int a, int b ...
+}
+
+param():
+{
+}
+{
+  type() name()
+}
+
+storage():
+{
+}
+{  [<STATIC >]
+}
+void assign():
+{
+  
+}
+{
+  < IDENTIFIER >
+  (("=" | "는") expr()
+	| [<ADJECTIVE_JOSA >] expr() [< OBJECTIVE_JOSA >] ("대입" | ("넣") < TERMINAL_EXPR >)
+	| ["을" | "를"] expr() [["으"] "로"] "설정" (("해" ["줘"]) | "한다"))
+}
+
+void expr():
+{
+
+}
+{
+  expr() < PLUS > expr()
+| expr() < MINUS > expr()
+| expr() < MULTIPLY > expr()
+| expr() < DIVIDE > expr()
+| expr() < MODULAR > expr()
+| expr() "&" expr()
+| expr() "|" expr()
+}
