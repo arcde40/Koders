@@ -41,7 +41,11 @@ TOKEN:
    "는" ("다")?
    | "어" ("줘" | "주어 ")? ("버려" | "버리어")?
    | "다" >
-| < ADJECTIVE_JOSA : "에" | "에게" | "께" | "한테" >
+| < ADJECTIVE_JOSA 	: "에" | "에게" | "께" | "한테" >
+| < AND_JOSA		: "와" | "과" >
+| < RO_JOSA			: "으로" | "로" >
+| < AS_JOSA			: "라고" | "고" >
+| < END_BUHO 		: "." | ";" | "!" | "?" >
 }
 TOKEN:
 {
@@ -165,6 +169,116 @@ defun():
   storage() typeref() name() "(" params() ")" block()
 }
 
+// TODO
+typedef():
+{
+
+}
+{
+  < TYPEDEF > typeref() < IDENTIFIER > "."
+| typeref() [<OBJECTIVE_JOSA >] <IDENTIFIER > [<RO_JOSA > | < AS_JOSA >] ("칭한" < TERMINAL_EXPR > | "부른" < TERMINAL_EXPR > | "칭해" < TERMINAL_EXPR > | "불러" < TERMINAL_EXPR >)
+}
+
+type():
+{
+
+}
+{
+  typeref()
+}
+
+typeref():
+{
+
+}
+{
+  typeref_base()
+  (    LOOKAHEAD(2) "[" "]"
+    | "[" < INTEGER > "]"
+    | "*"
+    | "(" param_typerefs() ")"
+  )*
+}
+
+typeref_base():
+{
+
+}
+{
+  < VOID >
+| < CHAR >
+| < SHORT >
+| < INT >
+| < LONG >
+| < STRUCT > <IDENTIFIER >
+| < UNION > <IDENTIFIER >
+| LOOKAHEAD( {isType(getToken(1).image)}) < IDENTIFIER > // typedef 
+}
+
+stmts():
+{
+
+}
+{
+  (stmt())*
+}
+
+stmt():
+{
+
+}
+{
+  (< END_BUHO >
+	| LOOKAHEAD(2) labeled_stmt()
+	| expr() < END_BUHO >
+	| block()
+	| if_stmt()
+	| while_stmt()
+	| switch_stmt()
+	| break_stmt()
+	| continue_stmt()
+	| goto_stmt()
+	| return_stmt()
+  )
+}
+
+if_stmt():
+{
+
+}
+{
+  [< IF >] expr() ["이"]["라"]"면" stmt() [LOOKAHEAD(1) < ELSE > stmt()]
+}
+
+while_stmt():
+{
+
+}
+{
+  expr()
+ ( ["일" | "때" | "일 때" | "일때"] "까지" < WHILE > <TERMINAL_EXPR >
+ | ("번" | "회") < WHILE > <TERMINAL_EXPR > 
+ ) stmt()
+}
+
+break_stmt():
+{
+
+}
+{
+  < BREAK > <END_BUHO >
+}
+
+return_stmt():
+{
+
+}
+{
+  LOOKAHEAD(2) < RETURN > <END_BUHO >
+| < RETURN > expr() < END_BUHO >
+}
+
+
 block():
 {
 }
@@ -178,14 +292,33 @@ defstruct():
 }
 {
   < STRUCT > name() member_list() "."
+| member_list() [<RO_JOSA >] ("이루어진" | "이뤄진" | "구성된" | "")  < STRUCT > name() [<OBJECTIVE_JOSA >] ("선언"|"정의") [("함" | "합니다" | < TERMINAL_EXPR >)].
+
 }
 
-defunion():
+defunion():	
 {
 
 }
 {
   < UNION > name() member_list() "."
+}
+
+member_list():
+{
+
+}
+{
+  "{" (slot() ";")* "}"
+| slot() (< ALL_JOSA > slot())*
+}
+
+slot():
+{
+
+}
+{
+  type() name()
 }
 
 params():
@@ -216,7 +349,187 @@ storage():
 {
 }
 {  [<STATIC >]
+}
+
+expr():
+{
+}
+{  LOOKAHEAD(term() "=")
+  term() ("=" | "는") expr()
+| LOOKAHEAD(term() opassign_op())
+  term() opassign_op() expr()
+| expr10()
 }
+opassign_op():
+{
+
+}
+{
+	("+="
+	| "-="
+	| "*="
+	| "/="
+	| "%="
+	| "&="
+	| "|="
+	| "^="
+	| "<<="
+	| ">>="
+	) 
+}
+
+expr10():
+{
+
+}
+{
+  expr9() ["?" expr() ":" expr10()]
+}
+
+expr9():
+{
+
+}
+{
+  expr8() ("||" expr8())*
+}
+
+expr8():
+{
+
+}
+{
+  expr7() ("&&" expr7())*
+}
+
+expr7():
+{
+
+}
+{
+  expr6() ( ">" expr6()
+  		  | "<" expr6()
+  		  | ">=" expr6()
+  		  | "<=" expr6()
+  		  | "==" expr6()
+  		  | "!=" expr6())* 
+}
+
+expr6():
+{
+
+}
+{
+  expr5() ("|" expr5())*
+}
+
+expr5():
+{
+
+}
+{
+  expr4() ("^" expr4())*
+}
+
+expr4():
+{
+
+}
+{
+  expr3() ("&" expr3())*
+}
+
+expr3():
+{
+
+}
+{
+  expr2() ( ">>" expr2()
+  		  | "<<" expr2()
+  	      )*  
+}
+
+expr2():
+{
+
+}
+{
+  expr1() ( "+" expr1()
+		  | "-" expr1())*
+}
+
+expr1():
+{
+
+}
+{
+  term() ( "*" term()
+       	 | "/" term()
+       	 | "%" term())*
+}
+
+term():
+{
+
+}
+{
+  LOOKAHEAD("(" type()) "(" type() ")" term()
+| unary()
+}
+
+unary():
+{
+
+}
+{
+  "++" unary()
+| "--" unary()
+| "+" term()
+| "-" term()
+| "!" term()
+| "~" term()
+| " * " term()
+| "&" term()
+| type() ["의"] "크기"
+| unary() ["의"] "크기"
+| postfix()
+}
+
+postfix():
+{
+
+}
+{
+  primary()
+	( "++"
+	| "--"
+	| "[" expr() "]"
+	| ". " name()
+	| "->" name()
+	| "(" args() ")"
+	)*	  
+}
+
+args():
+{
+
+}
+{
+  [ expr() ("," expr()) *]
+}
+
+primary():
+{
+
+}
+{
+  < INTEGER >
+| < CHARACTER >
+| < STRING >
+| < IDENTIFIER >
+| "(" expr() ")"
+}
+
 void assign():
 {
   
